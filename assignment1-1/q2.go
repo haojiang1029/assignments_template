@@ -6,22 +6,24 @@ import (
 	"strconv"
 	"os"
 	"log"
+	"fmt"
 )
 
+//var wg sync.WaitGroup
 // Sum numbers from channel `nums` and output sum to `out`.
 // You should only output to `out` once.
 // Do NOT modify function signature.
 func sumWorker(nums chan int, out chan int) {
 	// TODO: implement me
 	// HINT: use for loop over `nums`
+	//defer wg.Done()
+	fmt.Println("bbb")
 	sum := 0
-	// for v := range nums {
-	// 	sum += v
-	// }
-	for i  := 0; i < len(nums); i++ {
-		sum += <- nums
+	for v := range nums {
+		sum += v
+		fmt.Println("sum: ", sum)
 	}
-	//close(nums)
+	
 	out <- sum 
 }
 
@@ -34,7 +36,8 @@ func sum(num int, fileName string) int {
 	// TODO: implement me
 	// HINT: use `readInts` and `sumWorkers`
 	// HINT: used buffered channels for splitting numbers between workers
-
+	//wg.Add(num)
+	
 	reader, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
@@ -43,18 +46,28 @@ func sum(num int, fileName string) int {
 	if err != nil {
 		log.Fatal(err)
 	}
-	length := len(arr)
-	seg := length / num
-	nums := make(chan int, seg)
+	
+	nums := make(chan int, num)
 	out := make(chan int)
+	fmt.Println("num: , len: ", num, len(arr))
 
 	for i := 0; i < num; i++ {
-		for  j := range arr[i*seg:(i+1)*seg] {
-			nums <- j
-		}
-		
+		fmt.Println("i: ", i)
 		go sumWorker(nums, out)
+
 	}
+	
+	for v := range arr {
+		fmt.Println("v: ", v)
+		nums <- v
+
+	}
+
+	fmt.Println("aaa")
+	close(nums)
+	//wg.Wait()
+	
+	
 	var sum int
 	for i:= 0; i < num; i++ {
 		sum += <-out
