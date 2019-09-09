@@ -1,8 +1,7 @@
 package mapreduce
 
 import (
-	"log"
-	"sync"
+		"sync"
 )
 
 // schedule starts and waits for all tasks in the given phase (Map or Reduce).
@@ -27,6 +26,7 @@ func (mr *Master) schedule(phase jobPhase) {
 	//
 	// TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO TODO
 	//
+
 	var waitGroup sync.WaitGroup
 	for i:= 0; i < ntasks; i++ {
 		waitGroup.Add(1)
@@ -38,23 +38,21 @@ func (mr *Master) schedule(phase jobPhase) {
 		if phase == mapPhase {
 			taskArgs.File = mr.files[i]
 		}
+
 		go func() {
-			defer waitGroup.Done()
-			
-			worker := <- mr.registerChannel
-			if !call(worker, "Worker.DoTask", &taskArgs, nil) {
-				log.Fatal("call RPC failed")
+
+			for {
+				worker := <- mr.registerChannel
+				if call(worker, "Worker.DoTask", &taskArgs, nil) {
+					waitGroup.Done()
+					mr.registerChannel <- worker
+					break
+				}	
 			}
-			go func() {
-				mr.registerChannel <- worker
-			} ()
-			
 		} ()
+	
 	}
 	waitGroup.Wait()
-
-
-
 
 	debug("Schedule: %v phase done\n", phase)
 }
